@@ -1,4 +1,4 @@
-name: Compile FidelityFX ARM64 (custom build)
+name: Compile FidelityFX ARM64 (real repo files)
 
 on:
   workflow_dispatch:
@@ -15,19 +15,19 @@ jobs:
           ref: main
           fetch-depth: 1
 
-      - name: Setup ARM64 cross-compile
+      - name: Setup cross-compile ARM64
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y cmake gcc-aarch64-linux-gnu \
-            libvulkan-dev aarch64-linux-gnu-binutils || true
+          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu \
+            libvulkan-dev aarch64-linux-gnu-binutils
 
-      - name: Custom build
+      - name: Build with real repo files (internal + SDK backend)
         run: |
-          chmod +x compile_arm64_custom.sh || true
-          bash compile_arm64_custom.sh || true
+          chmod +x compile_arm64_custom.sh
+          bash compile_arm64_custom.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: arm64-libmcfsr-custom
+          name: arm64-libmcfsr-real
           path: build_arm64/*.so
