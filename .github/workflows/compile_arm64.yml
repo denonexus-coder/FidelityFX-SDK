@@ -1,0 +1,42 @@
+name: Compile FidelityFX ARM64 (libmcfsr for PowerVR)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: GPUOpen-LibrariesAndSDKs/FidelityFX-SDK
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup cross-compile ARM64
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake build-essential gcc-aarch64-linux-gnu \
+            libvulkan-dev aarch64-linux-gnu-binutils || true
+
+      - name: Configure CMake ARM64 (no samples, minimal)
+        run: |
+          mkdir build_arm64 && cd build_arm64
+          cmake ../Kits/FidelityFX \
+            -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+            -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+            -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=Release || true
+
+      - name: Build libs
+        run: cmake --build build_arm64 --parallel $(nproc) --verbose || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64-fidelityfx
+          path: build_arm64/*.so
