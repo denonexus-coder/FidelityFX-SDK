@@ -9,25 +9,37 @@ jobs:
   build-arm64:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Faz checkout DESTE fork (nao do repo upstream) para compilar os
+      # arquivos reais que estao aqui, incluindo as suas modificacoes.
+      - name: Checkout fork
+        uses: actions/checkout@v4
         with:
-          repository: GPUOpen-LibrariesAndSDKs/FidelityFX-SDK
-          ref: main
           fetch-depth: 1
 
-      - name: Setup cross-compile ARM64
+      - name: Setup cross-compile ARM64 + headers Vulkan
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu \
-            libvulkan-dev aarch64-linux-gnu-binutils
+          sudo apt-get install -y \
+            build-essential \
+            g++-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu \
+            libvulkan-dev
+          # Os headers do Vulkan sao independentes de arquitetura; usamos
+          # apenas os headers (VK_NO_PROTOTYPES), nao linkamos a .so.
 
-      - name: Build with real repo files (internal + SDK backend)
+      - name: Build libmcfsr.so (nucleo portavel: api + VK backend + FSR interno)
         run: |
           chmod +x compile_arm64_custom.sh
-          bash compile_arm64_custom.sh
+          CXX=aarch64-linux-gnu-g++ bash compile_arm64_custom.sh
+
+      - name: Inspecionar binario
+        run: |
+          file build_arm64/libmcfsr.so
+          aarch64-linux-gnu-readelf -h build_arm64/libmcfsr.so | grep -E 'Machine|Class'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: arm64-libmcfsr-real
           path: build_arm64/*.so
+          if-no-files-found: error
